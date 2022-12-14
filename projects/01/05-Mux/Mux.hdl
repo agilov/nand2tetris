@@ -10,25 +10,7 @@
  *
  * The canonical form is: `Mux(a,b,sel) = (a'bsel + ab'sel') + (absel' + absel)` and
  *
- * Mux(a,b,sel) = Or(
- *      Or(
- *          And(
- *              Not(a),
- *              And(b, sel)
- *          ),
- *          And(
- *              a,
- *              And(Not(b), Not(sel))
- *          )
- *      ),
- *      Or(
- *          And(
- *              a,
- *              And(b, Not(sel))
- *          ),
- *          And(a, And(b, sel))
- *      )
- *  )
+ * Mux(a,b,sel) = Or(And(Not(sel), a), And(sel, b))
  */
 
 CHIP Mux {
@@ -36,17 +18,8 @@ CHIP Mux {
     OUT out;
 
     PARTS:
-    Not(in=a,out=nota); // Computing Not(a) value
-    Not(in=b,out=notb); // Computing Not(b) value
-    Not(in=sel,out=notsel); // Computing Not(sel) value
-    And(a=b,b=sel,out=bsel); // Computing And(b, sel)
-    And(a=notb,b=notsel,out=notbnotsel); // Computing And(Not(b), Not(sel))
-    And(a=b,b=notsel,out=bnotsel); // Computing And(b, Not(sel))
-    And(a=nota,b=bsel,out=mt1); // Computing first minterm #1 a'bsel
-    And(a=a,b=notbnotsel,out=mt2); // Computing first minterm #2 ab'sel'
-    And(a=a,b=bnotsel,out=mt3); // Computing first minterm #3 absel'
-    And(a=a,b=bsel,out=mt4); // Computing first minterm #4 absel
-    Or(a=mt1,b=mt2,out=mt12); // Computing first brackets of the canonical form
-    Or(a=mt3,b=mt4,out=mt34); // Computing second brackets of the canonical form
-    Or(a=mt12,b=mt34,out=out); // Computing canonical form
+    Not(in=sel,out=notsel);
+    And(a=a,b=notsel,out=mt1);
+    And(a=b,b=sel,out=mt2);
+    Or(a=mt1,b=mt2,out=out);
 }
