@@ -44,6 +44,38 @@ CHIP ALU {
     PARTS:
 
 
+    // Zeroing x keeping as is
+    Mux16(a=x, b[0]=false, sel=zx, out=x1); // x1 output will contain zeroed x or x as is depending on selection (zx bit)
 
-   // Put you code here:
+    // Zeroing y or keeping as is
+    Mux16(a=y, b[0]=false, sel=zy, out=y1); // y1 output will contain zeroed y or y as is depending on selection (zx bit)
+
+    // Negating x1 or keeping as is
+    Not16(in=x1, out=x1negated); // Creating negated version of x1 input
+    Mux16(a=x1, b=x1negated, sel=nx, out=x2); // x2 output will contain negated x1 or x1 as is depending on selection (nx bit)
+
+    // Negating y1 or keeping as is
+    Not16(in=y1, out=y1negated); // Creating negated version of y1 input
+    Mux16(a=y1, b=y1negated, sel=ny, out=y2); // y2 output will contain negated y1 or y1 as is depending on selection (ny bit)
+
+    // Our unit (U) performing arithmetics or logic A or L. That's why it's called ALU.
+    Add16(a=x2, b=y2, out=xplusy); // Creating addition version
+    And16(a=x2, b=y2, out=xandsy); // Creating bitwise and version
+    Mux16(a=xandsy, b=xplusy, sel=f, out=preout); // Selecting between two variants (addition or bit-wise and using f bit)
+
+
+    Not16(in=preout, out=npreout); // Creating negated version of the output
+
+    Mux16(a=preout, b=npreout, sel=no, out=output); // Selecting (using no bit) between output and negated output
+    Mux16(a=output, b[0]=false, sel=false, out=out); // Feeding output to out
+
+    // Figuring out if output is negative
+    IsNeg(in=output,out=isNegative); // Output is negative if most significant bit is 1. So if not ng will contain 0
+    And(a=isNegative, b=true, out=ng); // Feeding ng to the output
+
+    // Figuring out if output is zero
+    Not16(in[0]=false, out=minusOne); // Creating -1
+    Add16(a=output, b=minusOne, out=outMinusOne); // Adding minusOne to the actual output
+    IsNeg(in=outMinusOne, out=outMinusOneIsNegative); // Result is negative whether output is negative or its zero.
+    Mux(a=outMinusOneIsNegative, b=false, sel=isNegative, out=zr); // Now we feeding zero to zr if the output is negative (because it's not zero) and outMinusOneIsNegative if not negative
 }
