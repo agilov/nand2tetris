@@ -1,0 +1,48 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/05/Memory.hdl
+
+/**
+ * The complete address space of the Hack computer's memory,
+ * including RAM and memory-mapped I/O. 
+ * The chip facilitates read and write operations, as follows:
+ *     Read:  out(t) = Memory[address(t)](t)
+ *     Write: if load(t-1) then Memory[address(t-1)](t) = in(t-1)
+ * In words: the chip always outputs the value stored at the memory 
+ * location specified by address. If load==1, the in value is loaded 
+ * into the memory location specified by address. This value becomes 
+ * available through the out output from the next time step onward.
+ * Address space rules:
+ * Only the upper 16K+8K+1 words of the Memory chip are used. 
+ * Access to address>0x6000 is invalid. Access to any address in 
+ * the range 0x4000-0x5FFF results in accessing the screen memory 
+ * map. Access to address 0x6000 results in accessing the keyboard 
+ * memory map. The behavior in these addresses is described in the 
+ * Screen and Keyboard chip specifications given in the book.
+ */
+
+CHIP Memory {
+    IN in[16], load, address[15];
+    OUT out[16];
+
+    PARTS:
+    // Route load bit between memory and screen using first address bit.
+    // All addresses with first bit 0 go to memory all other to the screen or ignored
+    // 11 case (d case) is ignored this keyboard cannot be written
+    DMux4Way(in=load, sel=address[13..14], a=loadMemoryA, b=loadMemoryB, c=loadScreen);
+    Or(a=loadMemoryA, b=loadMemoryB, out=loadMemory);
+
+    // Ram is in charge of 0x0 - 0x3FFF (0 - 011 1111 1111 1111) range thus first bit is ignored
+    RAM16K(in=in, load=loadMemory, address=address[0..13], out=ramOut);
+
+    // Screen is in charge of 0x4000 - 0x5FFF (100 0000 0000 0000 - 101 1111 1111 1111) range thus first 2 bits are ignored.
+    Screen(in=in, load=loadScreen, address=address[0..12], out=screenOut);
+
+    // Keyboard only outputs values of 0x6000 (110 0000 0000 0000) address and ignores load and in pins
+    Keyboard(out=keyboardOut);
+
+    // Route internal chips output using first two bits of the address.
+    // If bits are 00 and 01 - this is memory output, 10 will read screen and 11 for keyboard.
+    Mux4Way16(a=ramOut, b=ramOut, c=screenOut, d=keyboardOut, sel=address[13..14], out=out);
+}
