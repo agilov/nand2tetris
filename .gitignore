@@ -4,3 +4,4 @@ tools
 trash
 notes.md
 *.out
+**/target/*
